@@ -1,22 +1,27 @@
 {
   "name": "call-gigi",
-  "version": "0.1.0",
-  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hugobiais/call-gigi.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hugobiais/call-gigi/issues"
+  },
+  "homepage": "https://github.com/hugobiais/call-gigi#readme",
   "dependencies": {
-    "next": "15.1.7"
+    "express": "^4.21.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@types/node": "^20",
-    "@types/react": "19.0.10",
-    "eslint": "^9",
-    "eslint-config-next": "15.1.7",
-    "typescript": "^5"
+    "@types/node": "^22.13.5"
   }
 }
