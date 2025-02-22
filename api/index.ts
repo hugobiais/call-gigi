@@ -1,8 +1,24 @@
-const express = require("express");
+import dotenv from "dotenv";
+
+// Load environment variables first
+dotenv.config();
+
+import express from "express";
+import userInfoRouter from "./routes/userInfo";
+import onboardingRouter from "./routes/onboarding";
+
 const app = express();
 
-app.get("/", (req, res) => res.send("Express on Vercel"));
+// Middleware
+app.use(express.json());
 
-app.listen(3000, () => console.log("Server ready on port 3000."));
+// Routes
+app.use("/", userInfoRouter);
+app.use("/", onboardingRouter);
 
-module.exports = app;
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server ready on port ${PORT}`);
+});
+
+export default app;
