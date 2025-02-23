@@ -25,37 +25,85 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const processedCallIds = new Set<string>();
+
 router.post(
   "/update-user-info",
   [
     body("event")
       .equals("call_ended")
       .withMessage("Only call_ended events are supported"),
-    body("call.from_number")
-      .isMobilePhone("any")
-      .withMessage("Valid phone number is required"),
-    body("call.retell_llm_dynamic_variables").exists(),
-    body("call.transcript").exists(),
   ],
   async (req: Request, res: Response): Promise<void> => {
-    console.log("[post-call-user-update] Received request:", {
-      event: req.body.event,
-      from_number: req.body.call.from_number,
-    });
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      console.log("[post-call-user-update] Validation errors:", errors.array());
-      res.status(400).json({ errors: errors.array() });
-      return;
-    }
-
     try {
+      // Only process call_ended events
+      if (req.body.event !== "call_ended") {
+        res.status(400).json({ error: "Only call_ended events are supported" });
+        return;
+      }
+
+      const callId = req.body.call?.call_id;
+
+      if (!callId) {
+        res.status(400).json({ error: "Missing call_id" });
+        return;
+      }
+
+      // Check for duplicate call_id immediately
+      if (processedCallIds.has(callId)) {
+        console.log(
+          `[post-call-user-update] Skipping duplicate call_id: ${callId}`
+        );
+        res.json({ message: "Call already processed" });
+        return;
+      }
+
+      // Mark this call as processed immediately
+      processedCallIds.add(callId);
+
+      console.log("[post-call-user-update] Received request:", req.body);
+
       const {
-        call: { from_number, retell_llm_dynamic_variables, transcript },
+        call: {
+          from_number = "+33640563189",
+          retell_llm_dynamic_variables = req.body.call
+            ?.retell_llm_dynamic_variables || {},
+          transcript = req.body.call?.transcript || "",
+        } = {}, // Default empty object in case call is undefined
       } = req.body;
 
+      // Only proceed with OpenAI and database updates if we have the required data
+      if (!from_number || !transcript) {
+        console.log(
+          "[post-call-user-update] Skipping update - missing required data"
+        );
+        res.json({ message: "Skipping update - missing required data" });
+        return;
+      }
+
+      // Only proceed if the user has fields that need updating (where values are null or empty)
+      const user = await supabase
+        .from("users")
+        .select("*")
+        .eq("phone_number", from_number)
+        .single();
+
+      if (user.data) {
+        const missingFields = Object.keys(user.data).filter((field) => {
+          const value = user.data[field];
+          return value === null || value === "";
+        });
+
+        if (missingFields.length === 0) {
+          res.json({ message: "Skipping update - no missing fields" });
+          return;
+        }
+      }
+
       // Ask OpenAI to analyze the call and determine user profile updates
+      console.log(
+        "[post-call-user-update] Analyzing call transcript with OpenAI"
+      );
       const completion = await openai.chat.completions.create({
         model: "gpt-4o",
         response_format: {
@@ -67,71 +115,72 @@ router.post(
               type: "object",
               properties: {
                 first_name: {
-                  type: "string",
+                  type: ["string", "null"],
                   description: "The user's first name.",
                 },
+                gender: {
+                  type: ["string", "null"],
+                  description: "The user's gender.",
+                  enum: ["male", "female", "other", null],
+                },
                 year_of_birth: {
-                  type: "number",
+                  type: ["number", "null"],
                   description: "The year the user was born.",
                 },
                 job_or_education: {
-                  type: "string",
+                  type: ["string", "null"],
                   description: "The user's job or education status.",
                 },
                 relationship_type: {
-                  type: "string",
-                  description: "The type of relationship the user is seeking.",
+                  type: ["string", "null"],
+                  description:
+                    "The type of relationship the user is seeking. (casual, long-term, still figuring it out)",
                 },
                 dealbreakers: {
-                  type: "array",
+                  type: ["array", "null"],
                   description: "A list of dealbreakers the user has.",
                   items: {
                     type: "string",
                   },
                 },
                 greenflags: {
-                  type: "array",
+                  type: ["array", "null"],
                   description: "A list of green flags that the user looks for.",
                   items: {
                     type: "string",
                   },
                 },
                 dating_preferences: {
-                  type: "object",
+                  type: ["object", "null"],
                   description:
                     "User's dating preferences represented as a JSON object.",
                   properties: {
-                    preferences: {
-                      type: "array",
-                      description: "List of user preferences.",
-                      items: {
-                        type: "object",
-                        properties: {
-                          preference_key: {
-                            type: "string",
-                            description: "Key for the preference.",
-                          },
-                          preference_value: {
-                            type: "string",
-                            description: "Value for the preference.",
-                          },
-                        },
-                        required: ["preference_key", "preference_value"],
-                        additionalProperties: false,
-                      },
+                    minAge: {
+                      type: ["number", "null"],
+                      description: "Minimum age preference for dating",
+                    },
+                    maxAge: {
+                      type: ["number", "null"],
+                      description: "Maximum age preference for dating",
+                    },
+                    gender: {
+                      type: ["string", "null"],
+                      description: "Preferred gender for dating",
+                      enum: ["male", "female", "other", null],
                     },
                   },
-                  required: ["preferences"],
+                  required: ["minAge", "maxAge", "gender"],
                   additionalProperties: false,
                 },
                 time_since_single: {
-                  type: "string",
+                  type: ["string", "null"],
                   description:
                     "Time elapsed since the user was last in a relationship.",
                 },
               },
               required: [
                 "first_name",
+                "gender",
                 "year_of_birth",
                 "job_or_education",
                 "relationship_type",
@@ -196,6 +245,12 @@ router.post(
         user_update: userUpdate,
       });
     } catch (error) {
+      // On error, remove the call_id from processed set to allow retry
+      const callId = req.body.call?.call_id;
+      if (callId) {
+        processedCallIds.delete(callId);
+      }
+
       console.error("[post-call-user-update] Unexpected error:", error);
       res.status(500).json({ error: "Internal server error" });
     }

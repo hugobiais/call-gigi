@@ -99,7 +99,7 @@ router.post(
         if (!excludedFields.has(key)) {
           acc[key] = {
             value: value,
-            is_completed: value !== null,
+            is_completed: value !== null && value !== "",
           };
         }
         return acc;
