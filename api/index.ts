@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
-import userInfoRouter from "./routes/userInfo";
-import onboardingRouter from "./routes/onboarding";
+import userInfoRouter from "./routes/getUserInfo";
+import onboardingRouter from "./routes/updateUserInfo";
 
 const app = express();
 

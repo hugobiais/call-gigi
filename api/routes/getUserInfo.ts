@@ -36,16 +36,16 @@ router.post(
     }
 
     try {
-      const { from_number } = req.body;
+      const { phone_number } = req.body;
       console.log(
         "[get-user-info] Querying user with phone number:",
-        from_number
+        phone_number
       );
 
-      const { data: user, error } = await supabase
+      let { data: user, error } = await supabase
         .from("users")
         .select("*")
-        .eq("phone_number", from_number)
+        .eq("phone_number", phone_number)
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") {
@@ -55,17 +55,58 @@ router.post(
         return;
       }
 
+      // If user doesn't exist, create a new one with just the phone number
       if (!user) {
-        console.log("[get-user-info] User not found for number:", from_number);
-        res.status(404).json({ error: "User not found" });
+        console.log(
+          "[get-user-info] Creating new user for number:",
+          phone_number
+        );
+        const { data: newUser, error: createError } = await supabase
+          .from("users")
+          .insert([{ phone_number: phone_number }])
+          .select()
+          .single();
 
-        return;
+        if (createError) {
+          console.error(
+            "[get-user-info] Error creating new user:",
+            createError
+          );
+          res.status(500).json({ error: "Error creating new user" });
+          return;
+        }
+
+        user = newUser;
       }
 
-      console.log("[get-user-info] Successfully retrieved user data:", {
-        userId: user.id,
+      // Return user data with completion status, excluding system fields
+      const excludedFields = new Set([
+        "id",
+        "phone_number",
+        "created_at",
+        "updated_at",
+      ]);
+      const userFields = Object.entries(user).reduce((acc, [key, value]) => {
+        if (!excludedFields.has(key)) {
+          acc[key] = {
+            value: value,
+            is_completed: value !== null,
+          };
+        }
+        return acc;
+      }, {} as Record<string, { value: any; is_completed: boolean }>);
+
+      console.log(
+        "[get-user-info] Returning user data with completion status:",
+        {
+          userId: user.id,
+        }
+      );
+
+      res.json({
+        user_id: user.id,
+        fields: userFields,
       });
-      res.json({ user });
     } catch (error) {
       console.error("[get-user-info] Unexpected error:", error);
       res.status(500).json({ error: "Internal server error" });
