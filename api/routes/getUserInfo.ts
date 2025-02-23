@@ -113,7 +113,7 @@ router.post(
       );
 
       res.json({
-        userFields: userFields,
+        userFields: JSON.stringify(userFields),
       });
     } catch (error) {
       console.error("[get-user-info] Unexpected error:", error);

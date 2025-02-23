@@ -65,7 +65,7 @@ router.post(
 
       const {
         call: {
-          from_number = "+33640563189",
+          from_number,
           retell_llm_dynamic_variables = req.body.call
             ?.retell_llm_dynamic_variables || {},
           transcript = req.body.call?.transcript || "",
@@ -95,6 +95,9 @@ router.post(
         });
 
         if (missingFields.length === 0) {
+          console.log(
+            "[post-call-user-update] Skipping update - no missing fields"
+          );
           res.json({ message: "Skipping update - no missing fields" });
           return;
         }
