@@ -19,19 +19,13 @@ const supabase = createClient(
 router.post(
   "/get-user-info",
   [
-    body("llm_id").notEmpty().withMessage("llm_id is required"),
-    body("from_number")
+    body("phone_number")
       .isMobilePhone("any")
-      .withMessage("Valid from_number is required"),
-    body("to_number")
-      .isMobilePhone("any")
-      .withMessage("Valid to_number is required"),
+      .withMessage("Valid phone_number is required"),
   ],
   async (req: Request, res: Response): Promise<void> => {
     console.log("[get-user-info] Received request:", {
-      llm_id: req.body.llm_id,
-      from_number: req.body.from_number,
-      to_number: req.body.to_number,
+      phone_number: req.body.phone_number,
     });
 
     const errors = validationResult(req);
@@ -52,17 +46,10 @@ router.post(
         .from("users")
         .select("*")
         .eq("phone_number", from_number)
-        .single();
+        .maybeSingle();
 
-      // FIX: Supabase returns an error when no row is returned
-      // [get-user-info] Supabase error: {
-      //   code: 'PGRST116',
-      //   details: 'The result contains 0 rows',
-      //   hint: null,
-      //   message: 'JSON object requested, multiple (or no) rows returned'
-      // }
-
-      if (error) {
+      if (error && error.code !== "PGRST116") {
+        // Only treat non-PGRST116 errors as real errors
         console.error("[get-user-info] Supabase error:", error);
         res.status(500).json({ error: "Error fetching user data" });
         return;
@@ -71,6 +58,7 @@ router.post(
       if (!user) {
         console.log("[get-user-info] User not found for number:", from_number);
         res.status(404).json({ error: "User not found" });
+
         return;
       }
 
