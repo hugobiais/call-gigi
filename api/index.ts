@@ -4,9 +4,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
-import userInfoRouter from "./routes/getUserInfo";
-import userInfoRetellRouter from "./routes/getUserInfoRetell";
-import onboardingRouter from "./routes/updateUserInfo";
+import getUserInfoRouter from "./routes/getUserInfo";
+import updateUserInfoRouter from "./routes/updateUserInfo";
 
 const app = express();
 
@@ -14,9 +13,8 @@ const app = express();
 app.use(express.json());
 
 // Routes
-app.use("/", userInfoRouter);
-app.use("/", userInfoRetellRouter);
-app.use("/", onboardingRouter);
+app.use("/", getUserInfoRouter);
+app.use("/", updateUserInfoRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

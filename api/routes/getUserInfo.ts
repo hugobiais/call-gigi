@@ -19,13 +19,19 @@ const supabase = createClient(
 router.post(
   "/get-user-info",
   [
-    body("phone_number")
+    body("llm_id").notEmpty().withMessage("llm_id is required"),
+    body("from_number")
       .isMobilePhone("any")
-      .withMessage("Valid phone_number is required"),
+      .withMessage("Valid from_number is required"),
+    body("to_number")
+      .isMobilePhone("any")
+      .withMessage("Valid to_number is required"),
   ],
   async (req: Request, res: Response): Promise<void> => {
     console.log("[get-user-info] Received request:", {
-      phone_number: req.body.phone_number,
+      llm_id: req.body.llm_id,
+      from_number: req.body.from_number,
+      to_number: req.body.to_number,
     });
 
     const errors = validationResult(req);
@@ -36,16 +42,16 @@ router.post(
     }
 
     try {
-      const { phone_number } = req.body;
+      const { from_number } = req.body;
       console.log(
         "[get-user-info] Querying user with phone number:",
-        phone_number
+        from_number
       );
 
       let { data: user, error } = await supabase
         .from("users")
         .select("*")
-        .eq("phone_number", phone_number)
+        .eq("phone_number", from_number)
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") {
@@ -59,11 +65,11 @@ router.post(
       if (!user) {
         console.log(
           "[get-user-info] Creating new user for number:",
-          phone_number
+          from_number
         );
         const { data: newUser, error: createError } = await supabase
           .from("users")
-          .insert([{ phone_number: phone_number }])
+          .insert([{ phone_number: from_number }])
           .select()
           .single();
 
@@ -76,10 +82,13 @@ router.post(
           return;
         }
 
-        user = newUser;
+        // Return empty fields for new user
+        console.log("[get-user-info] Returning empty {} for new user");
+        res.json({});
+        return;
       }
 
-      // Return user data with completion status, excluding system fields
+      // For existing users, return all fields with completion status
       const excludedFields = new Set([
         "id",
         "phone_number",
@@ -99,13 +108,12 @@ router.post(
       console.log(
         "[get-user-info] Returning user data with completion status:",
         {
-          userId: user.id,
+          userFields: userFields,
         }
       );
 
       res.json({
-        user_id: user.id,
-        fields: userFields,
+        userFields: userFields,
       });
     } catch (error) {
       console.error("[get-user-info] Unexpected error:", error);
