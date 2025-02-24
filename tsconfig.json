@@ -2,8 +2,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "incremental": true,
-    "target": "es2017",
-    "module": "commonjs",
+    "target": "es2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
