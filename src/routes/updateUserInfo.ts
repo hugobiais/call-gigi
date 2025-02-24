@@ -1,7 +1,6 @@
 import { Router, Request, Response } from "express";
 import { body } from "express-validator";
 import { createClient } from "@supabase/supabase-js";
-import { pipeline } from "@xenova/transformers";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 
@@ -228,6 +227,7 @@ router.post(
       if (userUpdate.greenflags && userUpdate.greenflags.length > 0) {
         try {
           // Initialize the embedding pipeline only when needed
+          const { pipeline } = await import('@xenova/transformers');
           const generateEmbedding = await pipeline(
             "feature-extraction",
             "Supabase/gte-small"
