@@ -65,7 +65,7 @@ router.post(
 
       const {
         call: {
-          from_number = "+12137771234",
+          from_number,
           retell_llm_dynamic_variables = req.body.call
             ?.retell_llm_dynamic_variables || {},
           transcript = req.body.call?.transcript || "",
@@ -227,7 +227,7 @@ router.post(
       if (userUpdate.greenflags && userUpdate.greenflags.length > 0) {
         try {
           // Initialize the embedding pipeline only when needed
-          const { pipeline } = await import('@xenova/transformers');
+          const { pipeline } = await import("@xenova/transformers");
           const generateEmbedding = await pipeline(
             "feature-extraction",
             "Supabase/gte-small"
