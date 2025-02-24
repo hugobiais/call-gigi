@@ -198,6 +198,7 @@ A TypeScript-based API service (using Express.js) used to communicate with Retel
 Those are vague ideas of what I'd like to improve in the future.
 
 - Would be nice to have a CLI to automatically add the Retell Agent to your Retell account using their SDK. (didn't do it because lack of time)
+- Didn't take into accont the T&C where you should ask the user before you start getting data from them.
 - Finish the `outbound call` feature
 - security improvements
 - better recommendation algorithm (and embeddings)
