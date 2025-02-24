@@ -59,7 +59,7 @@ router.post(
           "[get-user-info] Creating new user for number:",
           from_number
         );
-        const { data: newUser, error: createError } = await supabase
+        const { error: createError } = await supabase
           .from("users")
           .insert([{ phone_number: from_number }])
           .select()

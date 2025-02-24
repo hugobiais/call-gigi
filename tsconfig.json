@@ -1,14 +1,20 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "outDir": "dist",
+    "incremental": true,
+    "target": "es2017",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "./",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "lib": ["ESNext"],
+    "strictNullChecks": false
   },
-  "include": ["api/**/*"],
-  "exclude": ["node_modules"]
+  "compileOnSave": true,
+  "include": ["src"]
 }
