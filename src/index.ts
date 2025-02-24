@@ -4,9 +4,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
-import getUserInfoRouter from "./routes/getUserInfo";
-import updateUserInfoRouter from "./routes/updateUserInfo";
-import matchUsersRouter from "./routes/matchUsers";
+import getUserInfoRouter from "./routes/getUserInfo.js";
+import updateUserInfoRouter from "./routes/updateUserInfo.js";
+import matchUsersRouter from "./routes/matchUsers.js";
 
 const app = express();
 
