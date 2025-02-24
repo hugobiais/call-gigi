@@ -6,6 +6,7 @@ dotenv.config();
 import express from "express";
 import getUserInfoRouter from "./routes/getUserInfo";
 import updateUserInfoRouter from "./routes/updateUserInfo";
+import matchUsersRouter from "./routes/matchUsers";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(express.json());
 // Routes
 app.use("/", getUserInfoRouter);
 app.use("/", updateUserInfoRouter);
+app.use("/", matchUsersRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

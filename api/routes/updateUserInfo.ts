@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
-import { body, validationResult } from "express-validator";
+import { body } from "express-validator";
 import { createClient } from "@supabase/supabase-js";
+import { pipeline } from "@xenova/transformers";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 
@@ -65,7 +66,7 @@ router.post(
 
       const {
         call: {
-          from_number,
+          from_number = "+33640563189", // TEST
           retell_llm_dynamic_variables = req.body.call
             ?.retell_llm_dynamic_variables || {},
           transcript = req.body.call?.transcript || "",
@@ -222,9 +223,45 @@ router.post(
 
       const userUpdate = JSON.parse(content);
 
+      // Generate embeddings for greenflags if they exist
+      let greenflags_vector_embedding = null;
+      if (userUpdate.greenflags && userUpdate.greenflags.length > 0) {
+        try {
+          // Initialize the embedding pipeline only when needed
+          const generateEmbedding = await pipeline(
+            "feature-extraction",
+            "Supabase/gte-small"
+          );
+
+          // Combine all greenflags into a single string
+          const greenflagsText = userUpdate.greenflags.join(" ");
+
+          // Generate embedding
+          const output = await generateEmbedding(greenflagsText, {
+            pooling: "mean",
+            normalize: true,
+          });
+
+          // Convert to array
+          greenflags_vector_embedding = Array.from(output.data);
+        } catch (embeddingError) {
+          console.error(
+            "[post-call-user-update] Error generating embedding:",
+            embeddingError
+          );
+          // Continue with the update even if embedding fails
+        }
+      }
+
+      // Add the embedding to the update
+      const updateData = {
+        ...userUpdate,
+        greenflags_vector_embedding,
+      };
+
       const { data: updatedUser, error: updateError } = await supabase
         .from("users")
-        .update(userUpdate)
+        .update(updateData)
         .eq("phone_number", from_number)
         .select()
         .single();
@@ -240,12 +277,12 @@ router.post(
 
       console.log("[post-call-user-update] Successfully updated user:", {
         userId: updatedUser.id,
-        userUpdate: userUpdate,
+        userUpdate: updateData,
       });
 
       res.json({
         user_id: updatedUser.id,
-        user_update: userUpdate,
+        user_update: updateData,
       });
     } catch (error) {
       // On error, remove the call_id from processed set to allow retry
