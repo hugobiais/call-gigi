@@ -11,7 +11,7 @@ A TypeScript-based API service (using Express.js) used to communicate with Retel
 
 ## API endpoints
 
-- `POST /get-user-info`: Called by the Voice agent at the start of every inbound call, it returns the user's information to be injected into the system prompt of the agent. See **Inbound Call Webhook URL** on Retell.
+- `POST /get-user-info`: Called by the Voice agent at the start of every inbound call, it returns the user's information to be injected into the system prompt of the agent. See [Inbound call webhook](https://docs.retellai.com/features/inbound-call-webhook) on Retell.
 - `POST /update-user-info`: Called by the Voice agent at the end of every inbound call, it gets the transcript of the call, passes it to OpenAI GPT-4o with Structured output to JSON Schema to extract the updated user information. It compute the greenflahs embeddings of the user and then updates the user's information in the database. See **Agent Level Webhook URL** on Retell.
 - (EARLY) `POST /match-users`: Called by Supabase webhook when an update is made on the `user` table, in particular when the `greenflags_vector_embedding` column has been updated. It then uses a custom Supabase SQL function (`match_users_by_greenflags`) to find the most similar users and stores the match in the `greenflags_embedding_matches` table.
 
@@ -99,7 +99,6 @@ A TypeScript-based API service (using Express.js) used to communicate with Retel
    - Model: gpt-4o
    - Voice: ElevenLabs - Myra (female)
    - Functions: the default `end_call` function
-   - Inbound Call Webhook URL: endpoint for `POST /get-user-info`
    - Agent Level Webhook URL: endpoint for `POST /update-user-info`
    - Welcome message: `AI Initiates: dynamic`
    - System prompt:
@@ -155,6 +154,8 @@ A TypeScript-based API service (using Express.js) used to communicate with Retel
    Always keep your tone playful, engaging, and warm. Let your personality shine through in every question, and guide users step-by-step as if you’re chatting with an old friend who’s here to help them find love.
    ```
 
+   After you've created the agent (and once you have a phone number to link to the agent), you have to use the [Retell API](https://docs.retellai.com/api-references/update-phone-number) to set the `inbound_webhook_url` to your endpoint. That's super important, otherwise the agent won't be able to call you when it gets inbound calls (the way to change that on the UI is not existant as of today 24/01/25, and on the agent page it doesn't work). To use the Retell API, you need to set up an API key in the Retell dashboard. Definitely something to improve in the future and integrate to configuration with CLI or something like that.
+
 4. **Environment Configuration**
 
    - Copy the `.env.example` file to create a new `.env` file
@@ -169,7 +170,7 @@ A TypeScript-based API service (using Express.js) used to communicate with Retel
 
 5. **Deployment**
 
-   The only thing you really need to deploy is the backend. I decided to deploy it on Vercel (free). To actually have a phone number to link to the Retell agent, you can either buy a phone number from Retell or get one from Twilio and link it. I decided to go with Retell because it was simpler to setup it up, but it comes with limitations (outbound calls only to US numbers). Definitely something to improve in the future.
+   The only thing you really need to deploy is the backend. I decided to deploy it on Railway (free tier) using the following [template](https://github.com/matthewspear/expressjs). To actually have a phone number to link to the Retell agent, you can either buy a phone number from Retell or get one from Twilio and link it. I decided to go with Retell because it was simpler to setup it up, but it comes with limitations (outbound calls only to US numbers). Definitely something to improve in the future.
 
 ## Running the project and testing it
 
