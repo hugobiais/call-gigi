@@ -65,7 +65,7 @@ router.post(
 
       const {
         call: {
-          from_number,
+          from_number = "+12137771234",
           retell_llm_dynamic_variables = req.body.call
             ?.retell_llm_dynamic_variables || {},
           transcript = req.body.call?.transcript || "",
