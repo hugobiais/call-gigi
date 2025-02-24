@@ -19,20 +19,12 @@ const supabase = createClient(
 router.post(
   "/get-user-info",
   [
-    body("llm_id").notEmpty().withMessage("llm_id is required"),
-    body("from_number")
-      .isMobilePhone("any")
-      .withMessage("Valid from_number is required"),
-    body("to_number")
-      .isMobilePhone("any")
-      .withMessage("Valid to_number is required"),
+    body("event")
+      .equals("call_inbound")
+      .withMessage("event must be call_inbound"),
   ],
   async (req: Request, res: Response): Promise<void> => {
-    console.log("[get-user-info] Received request:", {
-      llm_id: req.body.llm_id,
-      from_number: req.body.from_number,
-      to_number: req.body.to_number,
-    });
+    console.log("[get-user-info] Received request:", req.body);
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -42,7 +34,7 @@ router.post(
     }
 
     try {
-      const { from_number } = req.body;
+      const { from_number } = req.body.call_inbound;
       console.log(
         "[get-user-info] Querying user with phone number:",
         from_number
@@ -84,7 +76,13 @@ router.post(
 
         // Return empty fields for new user
         console.log("[get-user-info] Returning empty {} for new user");
-        res.json({});
+        res.json({
+          call_inbound: {
+            dynamic_variables: {
+              userFields: {},
+            },
+          },
+        });
         return;
       }
 
@@ -113,7 +111,11 @@ router.post(
       );
 
       res.json({
-        userFields: JSON.stringify(userFields),
+        call_inbound: {
+          dynamic_variables: {
+            userFields: JSON.stringify(userFields),
+          },
+        },
       });
     } catch (error) {
       console.error("[get-user-info] Unexpected error:", error);
